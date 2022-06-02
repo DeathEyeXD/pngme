@@ -38,3 +38,34 @@ impl ChunkType {
         return Error::from(format!("{} is not a valid png byte", byte));
     }
 }
+impl TryFrom<[u8; 4]> for ChunkType {
+    type Error = Error;
+
+    fn try_from(array: [u8; 4]) -> Result<Self, Self::Error> {
+        for byte in array {
+            if let 65..=90 | 97..=122 = byte {
+                return Err(Error::from(format!("{} is not a valid png byte", byte)));
+            }
+        }
+        Ok(ChunkType { values: array })
+    }
+}
+
+impl FromStr for ChunkType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut bytes = [0; 4];
+        for (index, byte) in s.bytes().enumerate() {
+            ChunkType::is_byte_valid(byte)?;
+            bytes[index] = byte;
+        }
+        Ok(ChunkType { values: bytes })
+    }
+}
+
+impl fmt::Display for ChunkType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", String::from_utf8_lossy(&self.bytes()))
+    }
+}
