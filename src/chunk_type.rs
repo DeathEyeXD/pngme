@@ -17,6 +17,14 @@ impl ChunkType {
         // bits are checked on creation, so only chgeck if reserved bit is valid
         self.is_reserved_bit_valid()
     }
+    fn is_critical(&self) -> bool {
+        self.values[0].is_ascii_uppercase()
+    }
+
+    fn is_public(&self) -> bool {
+        self.values[1].is_ascii_uppercase()
+    }
+
     fn is_reserved_bit_valid(&self) -> bool {
         Self::is_reserved_byte_valid(self.values[2])
     }
