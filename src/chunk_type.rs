@@ -1,7 +1,6 @@
 use crate::Error;
 use std::fmt;
 use std::fmt::Formatter;
-use std::path::Display;
 use std::str::FromStr;
 
 #[derive(PartialEq, Debug)]
@@ -62,12 +61,16 @@ impl FromStr for ChunkType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut bytes = [0; 4];
-        for (index, byte) in s.bytes().enumerate() {
-            ChunkType::is_byte_valid(byte)?;
-            bytes[index] = byte;
+        let s = s.as_bytes();
+        let len = s.len();
+        if len > 4 {
+            return Err(Error::from(format!(
+                "Required 4 byte string got {} bytes",
+                len
+            )));
         }
-        Ok(ChunkType { values: bytes })
+        let bytes = [s[0], s[1], s[2], s[3]];
+        ChunkType::try_from(bytes)
     }
 }
 
