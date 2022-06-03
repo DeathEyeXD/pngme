@@ -1,6 +1,6 @@
 use crate::chunk_type::ChunkType;
+use crate::Result;
 use crc::{Crc, CRC_32_ISO_HDLC};
-
 const CRC_CALCULATOR: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 struct Chunk {
@@ -34,5 +34,21 @@ impl Chunk {
     }
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.len
+            .to_be_bytes()
+            .iter()
+            .chain(self.chunk_type.bytes().iter())
+            .chain(self.data.iter())
+            .chain(self.crc.to_be_bytes().iter())
+            .copied()
+            .collect()
+    }
+
+    pub fn data_as_string(&self) -> Result<String> {
+        let string = String::from_utf8(self.data.clone())?;
+        Ok(string)
     }
 }

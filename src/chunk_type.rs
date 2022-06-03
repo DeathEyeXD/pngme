@@ -9,27 +9,27 @@ pub(crate) struct ChunkType {
 }
 
 impl ChunkType {
-    fn bytes(&self) -> [u8; 4] {
+    pub fn bytes(&self) -> [u8; 4] {
         self.values
     }
 
-    fn is_valid(&self) -> bool {
+    pub fn is_valid(&self) -> bool {
         // bits are checked on creation, so only chgeck if reserved bit is valid
         self.is_reserved_bit_valid()
     }
-    fn is_critical(&self) -> bool {
+    pub fn is_critical(&self) -> bool {
         self.values[0].is_ascii_uppercase()
     }
 
-    fn is_public(&self) -> bool {
+    pub fn is_public(&self) -> bool {
         self.values[1].is_ascii_uppercase()
     }
 
-    fn is_reserved_bit_valid(&self) -> bool {
+    pub fn is_reserved_bit_valid(&self) -> bool {
         Self::is_reserved_byte_valid(self.values[2])
     }
 
-    fn is_reserved_byte_valid(byte: u8) -> bool {
+    pub fn is_reserved_byte_valid(byte: u8) -> bool {
         byte.is_ascii_uppercase()
     }
 
@@ -39,9 +39,10 @@ impl ChunkType {
         }
         Ok(())
     }
-    fn is_safe_to_copy(&self) -> bool {
+    pub fn is_safe_to_copy(&self) -> bool {
         self.values[3].is_ascii_lowercase()
     }
+
     fn error_byte(byte: u8) -> Error {
         return Error::from(format!("{} is not a valid png byte", byte));
     }
