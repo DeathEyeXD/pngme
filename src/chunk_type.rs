@@ -4,7 +4,7 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 
 #[derive(PartialEq, Debug)]
-struct ChunkType {
+pub(crate) struct ChunkType {
     values: [u8; 4],
 }
 
