@@ -1,6 +1,6 @@
 use crate::chunk_type::ChunkType;
 use crate::{Error, Result};
-use crc::{Crc, CRC_32_ISO_HDLC};
+use crc::{Crc, CRC_32_CKSUM, CRC_32_ISO_HDLC};
 use std::fmt;
 use std::io::{BufReader, Read};
 const CRC_CALCULATOR: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
@@ -15,13 +15,24 @@ struct Chunk {
 impl Chunk {
     pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
         let len = data.len();
-        let crc = CRC_CALCULATOR.checksum(&data);
+
+        let crc = Self::calculate_crc(&chunk_type, &data);
         Chunk {
             chunk_type,
             len: len as u32,
             crc,
             data,
         }
+    }
+
+    pub fn calculate_crc(chunk_type: &ChunkType, data: &[u8]) -> u32 {
+        let crc_bytes: Vec<u8> = chunk_type
+            .bytes()
+            .iter()
+            .chain(data.iter())
+            .copied()
+            .collect();
+        CRC_CALCULATOR.checksum(&crc_bytes)
     }
 
     pub fn length(&self) -> u32 {
@@ -82,6 +93,15 @@ impl TryFrom<&[u8]> for Chunk {
 
         reader.read_exact(&mut u32_buff)?;
         let crc = u32::from_be_bytes(u32_buff);
+
+        let expected_crc = Chunk::calculate_crc(&chunk_type, &data);
+
+        if crc != expected_crc {
+            return Err(Error::from(format!(
+                "Input crc is incorrect, got {}, but {} is correct crc",
+                crc, expected_crc
+            )));
+        }
 
         Ok(Chunk {
             len,
