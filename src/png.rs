@@ -52,9 +52,11 @@ impl Png {
         &self.chunks
     }
 
-    pub fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
+    /// Get first matched chunk by type, searched in reverse because encoded messages are appended to the end of png
+    pub fn get_chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
         self.chunks
             .iter()
+            .rev()
             .find(|chunk| chunk.chunk_type().to_string() == chunk_type)
     }
 
@@ -226,7 +228,7 @@ mod tests {
     #[test]
     fn test_chunk_by_type() {
         let png = testing_png();
-        let chunk = png.chunk_by_type("FrSt").unwrap();
+        let chunk = png.get_chunk_by_type("FrSt").unwrap();
         assert_eq!(&chunk.chunk_type().to_string(), "FrSt");
         assert_eq!(&chunk.data_as_string().unwrap(), "I am the first chunk");
     }
@@ -235,7 +237,7 @@ mod tests {
     fn test_append_chunk() {
         let mut png = testing_png();
         png.append_chunk(chunk_from_strings("TeSt", "Message").unwrap());
-        let chunk = png.chunk_by_type("TeSt").unwrap();
+        let chunk = png.get_chunk_by_type("TeSt").unwrap();
         assert_eq!(&chunk.chunk_type().to_string(), "TeSt");
         assert_eq!(&chunk.data_as_string().unwrap(), "Message");
     }
@@ -245,7 +247,7 @@ mod tests {
         let mut png = testing_png();
         png.append_chunk(chunk_from_strings("TeSt", "Message").unwrap());
         png.remove_chunk("TeSt").unwrap();
-        let chunk = png.chunk_by_type("TeSt");
+        let chunk = png.get_chunk_by_type("TeSt");
         assert!(chunk.is_none());
     }
 

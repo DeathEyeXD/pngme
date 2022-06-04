@@ -23,6 +23,7 @@ impl CliArgs {
 pub enum CommandType {
     /// Encode a chunk with given chunk type and message into file (note: it checks whether file is a valid png)
     Encode(EncodeArgs),
+    /// Decode a secret message encoded in png file
     Decode(DecodeArgs),
 
     Remove(RemoveArgs),
@@ -65,11 +66,15 @@ use crate::Error;
 
 pub trait Command {
     fn execute_command(self) -> crate::Result<()>;
+
+    fn get_png(bytes: &[u8]) -> crate::Result<Png> {
+        Png::try_from(bytes).map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
+    }
 }
 
 impl Command for EncodeArgs {
     fn execute_command(self) -> crate::Result<()> {
-        let redirect_output = self.output_file.is_none();
+        let redirect_output = self.output_file.is_some();
 
         let chunk_type = ChunkType::from_str(&self.chunk_type)?;
         let chunk_data = self.message.into_bytes();
@@ -79,7 +84,7 @@ impl Command for EncodeArgs {
         let mut file = OpenOptions::new()
             .write(true)
             .read(true)
-            .create(redirect_output)
+            .create(!redirect_output)
             .append(!self.no_check)
             .open(self.file_path)?;
 
@@ -91,8 +96,7 @@ impl Command for EncodeArgs {
             let mut png = if len == 0 {
                 Png::new()
             } else {
-                Png::try_from(&png_buf[..])
-                    .map_err(|err| Error::from(format!("Invalid png file data ({})", err)))?
+                Self::get_png(&png_buf[..])?
             };
 
             if redirect_output {
@@ -107,6 +111,26 @@ impl Command for EncodeArgs {
             let bytes = chunk.as_bytes();
             file.write_all(&bytes)?;
         }
+
+        Ok(())
+    }
+}
+
+impl Command for DecodeArgs {
+    fn execute_command(self) -> crate::Result<()> {
+        let mut file = OpenOptions::new().read(true).open(self.file_path)?;
+
+        let mut png_buf = Vec::new();
+
+        file.read_to_end(&mut png_buf)?;
+        let png = Self::get_png(&png_buf[..])?;
+
+        let message = png
+            .get_chunk_by_type(&self.chunk_type)
+            .map_or(Ok(String::from("")), |chunk| chunk.data_as_string())
+            .map_err(|err| Error::from(format!("Invalid message data: {}", err)))?;
+
+        println!("{}", message);
 
         Ok(())
     }
