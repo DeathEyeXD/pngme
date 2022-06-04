@@ -1,7 +1,7 @@
+use std::fmt::{Display, Formatter};
+
 use crate::chunk::Chunk;
 use crate::{Error, Result};
-use std::fmt::{Display, Formatter};
-use std::io::{BufReader, Read};
 
 #[derive(Debug)]
 pub struct Png {
@@ -12,15 +12,18 @@ pub struct Png {
 impl Png {
     pub const STANDARD_HEADER: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
 
-    fn new(chunks: Vec<Chunk>) -> Png {
+    pub fn new() -> Png {
         Png {
             header: Self::STANDARD_HEADER,
-            chunks,
+            chunks: Vec::new(),
         }
     }
 
     pub fn from_chunks(chunks: Vec<Chunk>) -> Png {
-        Self::new(chunks)
+        Png {
+            header: Self::STANDARD_HEADER,
+            chunks,
+        }
     }
 
     pub fn append_chunk(&mut self, chunk: Chunk) {
@@ -55,7 +58,7 @@ impl Png {
             .find(|chunk| chunk.chunk_type().to_string() == chunk_type)
     }
 
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         Self::STANDARD_HEADER
             .into_iter()
             .chain(
@@ -115,11 +118,13 @@ impl Display for Png {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::chunk::Chunk;
-    use crate::chunk_type::ChunkType;
     use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use crate::chunk::Chunk;
+    use crate::chunk_type::ChunkType;
+
+    use super::*;
 
     fn testing_chunks() -> Vec<Chunk> {
         let mut chunks = Vec::new();

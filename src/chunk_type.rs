@@ -1,7 +1,8 @@
-use crate::Error;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+
+use crate::Error;
 
 #[derive(PartialEq, Debug)]
 pub struct ChunkType {
@@ -64,7 +65,7 @@ impl FromStr for ChunkType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.as_bytes();
         let len = s.len();
-        if len > 4 {
+        if len < 4 {
             return Err(Error::from(format!(
                 "Required 4 byte string got {} bytes",
                 len
@@ -82,9 +83,10 @@ impl fmt::Display for ChunkType {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use super::*;
 
     #[test]
     pub fn test_chunk_type_from_bytes() {
