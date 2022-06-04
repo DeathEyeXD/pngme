@@ -64,7 +64,7 @@ impl FromStr for ChunkType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.as_bytes();
         let len = s.len();
-        if len > 4 {
+        if len < 4 {
             return Err(Error::from(format!(
                 "Required 4 byte string got {} bytes",
                 len
