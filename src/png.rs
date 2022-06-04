@@ -3,6 +3,7 @@ use crate::{Error, Result};
 use std::fmt::{Display, Formatter};
 use std::io::{BufReader, Read};
 
+#[derive(Debug)]
 pub struct Png {
     header: [u8; 8],
     chunks: Vec<Chunk>,
@@ -71,37 +72,29 @@ impl TryFrom<&[u8]> for Png {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> std::result::Result<Self, Self::Error> {
-        if bytes.len() < 4 {
+        let bytes_len = bytes.len();
+        if bytes_len < 8 {
             return Err(Error::from(format!(
                 "Valid png must have at least 8 bytes but only {} were provided",
-                bytes.len()
+                bytes_len
             )));
         }
-        let mut reader = BufReader::new(bytes);
-        let mut header = [0 as u8; 8];
 
-        reader.read_exact(&mut header)?;
+        let mut header = &bytes[0..8];
 
         if header != Png::STANDARD_HEADER {
             return Err(Error::from(format!(
-                "Valid png must contain valid signature header ({:?}), but {:?} header war provided",
-                Png::STANDARD_HEADER, header
-            )));
+                        "Valid png must contain valid signature header ({:?}), but {:?} header war provided",
+                        Png::STANDARD_HEADER, header
+                    )));
         }
-
-        let mut len_of_next_chunk = [0; 4];
-
+        let mut index = 8;
         let mut chunks = Vec::new();
-        while let Ok(len) = reader.read(&mut len_of_next_chunk) {
-            if len != 4 {
-                break;
-            };
-            let len = u32::from_be_bytes(len_of_next_chunk);
-            let mut chunk_buf = vec![0; 16 + len as usize];
 
-            reader.read_exact(&mut chunk_buf)?;
-
-            chunks.push(Chunk::try_from(&chunk_buf[..])?);
+        while index < bytes_len {
+            let chunk = Chunk::try_from(&bytes[index..])?;
+            index += chunk.bytes_len();
+            chunks.push(chunk)
         }
 
         Ok(Png::from_chunks(chunks))

@@ -5,6 +5,7 @@ use std::fmt;
 use std::io::{BufReader, Read};
 const CRC_CALCULATOR: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
+#[derive(Debug)]
 pub struct Chunk {
     chunk_type: ChunkType,
     len: u32,
@@ -63,6 +64,10 @@ impl Chunk {
     pub fn data_as_string(&self) -> Result<String> {
         let string = String::from_utf8(self.data.clone())?;
         Ok(string)
+    }
+
+    pub fn bytes_len(&self) -> usize {
+        12 + self.len as usize
     }
 }
 
