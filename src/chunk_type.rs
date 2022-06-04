@@ -1,7 +1,8 @@
-use crate::Error;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+
+use crate::Error;
 
 #[derive(PartialEq, Debug)]
 pub struct ChunkType {
@@ -82,9 +83,10 @@ impl fmt::Display for ChunkType {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use super::*;
 
     #[test]
     pub fn test_chunk_type_from_bytes() {

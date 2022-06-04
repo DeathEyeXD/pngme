@@ -1,8 +1,11 @@
-use crate::chunk_type::ChunkType;
-use crate::{Error, Result};
-use crc::{Crc, CRC_32_ISO_HDLC};
 use std::fmt;
 use std::io::{BufReader, Read};
+
+use crc::{Crc, CRC_32_ISO_HDLC};
+
+use crate::chunk_type::ChunkType;
+use crate::{Error, Result};
+
 const CRC_CALCULATOR: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 #[derive(Debug)]
@@ -131,9 +134,11 @@ impl fmt::Display for Chunk {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::chunk_type::ChunkType;
     use std::str::FromStr;
+
+    use crate::chunk_type::ChunkType;
+
+    use super::*;
 
     fn testing_chunk() -> Chunk {
         let data_length: u32 = 42;
