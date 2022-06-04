@@ -73,6 +73,12 @@ impl Png {
     }
 }
 
+impl Default for Png {
+    fn default() -> Self {
+        Png::new()
+    }
+}
+
 impl TryFrom<&[u8]> for Png {
     type Error = Error;
 
@@ -85,7 +91,7 @@ impl TryFrom<&[u8]> for Png {
             )));
         }
 
-        let mut header = &bytes[0..8];
+        let header = &bytes[0..8];
 
         if header != Png::STANDARD_HEADER {
             return Err(Error::from(format!(

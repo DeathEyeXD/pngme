@@ -1,9 +1,17 @@
 use crate::chunk::Chunk;
 use crate::chunk_type::ChunkType;
+use crate::png::Png;
 use clap::{Args, Parser, Subcommand};
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::str::FromStr;
+
+mod chunk;
+mod chunk_type;
+mod png;
+
+pub type Error = Box<dyn std::error::Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -61,19 +69,44 @@ pub struct PrintArgs {
     file_path: String,
 }
 
-use crate::png::Png;
-use crate::Error;
+pub fn execute_command(command: CommandType) -> Result<()> {
+    match command {
+        CommandType::Encode(args) => args.execute_command(),
+        CommandType::Decode(args) => args.execute_command(),
+        _ => Ok(()),
+    }
+}
+
+pub fn run(args: CliArgs) -> Result<()> {
+    let command = args.command;
+
+    execute_command(command)
+}
+
+pub fn get_args() -> CliArgs {
+    CliArgs::parse()
+}
 
 pub trait Command {
-    fn execute_command(self) -> crate::Result<()>;
+    fn execute_command(self) -> Result<()>;
 
-    fn get_png(bytes: &[u8]) -> crate::Result<Png> {
+    fn get_png(bytes: &[u8]) -> Result<Png> {
         Png::try_from(bytes).map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
+    }
+
+    fn open_file(path: &str, read: bool, write: bool, append: bool, create: bool) -> Result<File> {
+        OpenOptions::new()
+            .read(read)
+            .write(write)
+            .append(append)
+            .create(create)
+            .open(path)
+            .map_err(|err| Error::from(format!("Cannot open file {}, cause: {}", path, err)))
     }
 }
 
 impl Command for EncodeArgs {
-    fn execute_command(self) -> crate::Result<()> {
+    fn execute_command(self) -> Result<()> {
         let redirect_output = self.output_file.is_some();
 
         let chunk_type = ChunkType::from_str(&self.chunk_type)?;
@@ -81,12 +114,13 @@ impl Command for EncodeArgs {
 
         let chunk = Chunk::new(chunk_type, chunk_data);
 
-        let mut file = OpenOptions::new()
-            .write(true)
-            .read(true)
-            .create(!redirect_output)
-            .append(!self.no_check)
-            .open(self.file_path)?;
+        let mut file = Self::open_file(
+            &self.file_path,
+            true,
+            true,
+            !self.no_check,
+            !redirect_output,
+        )?;
 
         if !self.no_check {
             let mut png_buf = Vec::new();
@@ -102,7 +136,7 @@ impl Command for EncodeArgs {
             if redirect_output {
                 let to_file = self.output_file.unwrap();
 
-                file = OpenOptions::new().write(true).create(true).open(to_file)?;
+                file = Self::open_file(&to_file, false, true, false, false)?;
             }
             file.write_all(&png.as_bytes())?;
 
@@ -117,8 +151,8 @@ impl Command for EncodeArgs {
 }
 
 impl Command for DecodeArgs {
-    fn execute_command(self) -> crate::Result<()> {
-        let mut file = OpenOptions::new().read(true).open(self.file_path)?;
+    fn execute_command(self) -> Result<()> {
+        let mut file = Self::open_file(&self.file_path, true, false, false, false)?;
 
         let mut png_buf = Vec::new();
 

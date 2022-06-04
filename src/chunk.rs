@@ -1,10 +1,9 @@
 use std::fmt;
 use std::io::{BufReader, Read};
 
-use crc::{Crc, CRC_32_ISO_HDLC};
-
 use crate::chunk_type::ChunkType;
 use crate::{Error, Result};
+use crc::{Crc, CRC_32_ISO_HDLC};
 
 const CRC_CALCULATOR: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
