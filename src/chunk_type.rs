@@ -14,7 +14,7 @@ impl ChunkType {
     }
 
     pub fn is_valid(&self) -> bool {
-        // bits are checked on creation, so only chgeck if reserved bit is valid
+        // bits are checked on creation, so only check if reserved bit is valid
         self.is_reserved_bit_valid()
     }
     pub fn is_critical(&self) -> bool {
