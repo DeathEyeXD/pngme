@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::{BufReader, Read};
+use std::str::FromStr;
 
 use crate::chunk_type::ChunkType;
 use crate::{Error, Result};
@@ -26,6 +27,14 @@ impl Chunk {
             crc,
             data,
         }
+    }
+    
+    pub fn from_strings(chunk_type: &str, data: &str) -> Result<Chunk>{
+        let chunk_type = ChunkType::from_str(chunk_type)?;
+        
+        let data = data.bytes().collect();
+        
+        Ok(Self::new(chunk_type,data))
     }
 
     pub fn calculate_crc(chunk_type: &ChunkType, data: &[u8]) -> u32 {

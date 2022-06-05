@@ -99,6 +99,34 @@ pub fn get_args() -> CliArgs {
     CliArgs::parse()
 }
 
+pub fn create_png_file_from_bytes(filename: &str, bytes: &[u8]) -> Result<()> {
+    let png = Png::try_from(bytes)?;
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(filename)?;
+
+    file.write_all(&png.as_bytes())?;
+
+    Ok(())
+}
+
+pub fn write_byte_to_file(filename: &str, bytes: &[u8]) -> Result<()> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(filename)?;
+
+    file.write_all(bytes)?;
+
+    Ok(())
+}
+
+pub fn write_png_to_file(filename: &str, png: Png) -> Result<()> {
+    write_byte_to_file(filename, &png.as_bytes())
+}
+
 pub trait Command {
     fn execute_command(self) -> Result<()>;
 
@@ -181,3 +209,25 @@ impl Command for DecodeArgs {
         Ok(())
     }
 }
+
+// #[test]
+// fn test() -> Result<()> {
+//     /*let invalid_header = [20_u8; 8];
+//     let chunks = vec![
+//         Chunk::from_strings("FrSt", "I am the first chunk").unwrap(),
+//         Chunk::from_strings("miDl", "I am another chunk").unwrap(),
+//         Chunk::from_strings("LASt", "I am the last chunk").unwrap(),
+//     ];
+//
+//     let bytes = invalid_header
+//         .into_iter()
+//         .chain(chunks.iter().flat_map(|chunk| chunk.as_bytes()).into_iter())
+//         .collect::<Vec<u8>>();
+//     write_byte_to_file("tests/inputs/invalid_header.png", &bytes)?;
+//     Ok(())*/
+//     // let header_only = Png::new();
+//     //
+//     // create_png_file_from_bytes("tests/inputs/header_only.png", &header_only.as_bytes())?;
+//     //
+//     // Ok(())
+// }
