@@ -44,7 +44,10 @@ impl ChunkType {
     }
 
     fn error_byte(byte: u8) -> Error {
-        return Error::from(format!("{} is not a valid png byte", byte));
+        return Error::from(format!(
+            "{} is not a valid png byte (it must be a letter)",
+            byte
+        ));
     }
 }
 impl TryFrom<[u8; 4]> for ChunkType {

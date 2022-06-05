@@ -29,13 +29,19 @@ impl CliArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum CommandType {
-    /// Encode a chunk with given chunk type and message into file (note: it checks whether file is a valid png)
+    /// Encode a chunk with given chunk type and message into file
+    /// (note: by default it creates given file if it doesnt exists,
+    /// but if it exists it checks whether file is a valid png)
     Encode(EncodeArgs),
+
     /// Decode a secret message encoded in png file
     Decode(DecodeArgs),
 
+    /// Remove (and decode) first secret message found with given chunk type encoded in png file
+    /// (note: it deletes most-recent message first, and use -a flag to delete all matched messages)
     Remove(RemoveArgs),
-    /// Print png file as bytes from given path
+
+    /// Print png file data as bytes from given path
     Print(PrintArgs),
 }
 
@@ -62,6 +68,12 @@ pub struct DecodeArgs {
 pub struct RemoveArgs {
     file_path: String,
     chunk_type: String,
+    /// Remove all matched messages instead of first matching
+    #[clap(short, long)]
+    all: bool,
+    /// Dont encode and output removed messages
+    #[clap(short, long)]
+    ignore_messages: bool,
 }
 
 #[derive(Args, Debug)]

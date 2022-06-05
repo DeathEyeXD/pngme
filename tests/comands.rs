@@ -1,19 +1,17 @@
 use assert_cmd::prelude::*;
 
-use crate::common::{command, TestResult};
+use crate::common::command;
 use predicates::prelude::*;
 
 mod common;
 
 #[test]
-fn correct_bin_name() -> TestResult {
+fn correct_bin_name() {
     command();
-
-    Ok(())
 }
 
 #[test]
-fn shows_help() -> TestResult {
+fn shows_help() {
     for flag in ["-h", "--help"] {
         command()
             .arg(flag)
@@ -21,15 +19,13 @@ fn shows_help() -> TestResult {
             .success()
             .stdout(predicate::str::contains("USAGE:"));
     }
-    Ok(())
 }
 
 #[test]
-fn dies_no_args() -> TestResult {
+fn dies_no_args() {
     command()
         .assert()
         .failure()
         .code(2)
         .stderr(predicate::str::contains("USAGE:"));
-    Ok(())
 }
