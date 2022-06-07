@@ -2,6 +2,7 @@ pub use crate::chunk::Chunk;
 use crate::chunk_type::ChunkType;
 use crate::png::Png;
 use clap::{Args, Parser, Subcommand};
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::str::FromStr;
@@ -82,6 +83,7 @@ pub fn execute_command(command: CommandType) -> Result<()> {
     match command {
         CommandType::Encode(args) => args.execute_command(),
         CommandType::Decode(args) => args.execute_command(),
+        CommandType::Print(args) => args.execute_command(),
         _ => Ok(()),
     }
 }
@@ -127,8 +129,12 @@ pub fn write_png_to_file(filename: &str, png: Png) -> Result<()> {
 pub trait Command {
     fn execute_command(self) -> Result<()>;
 }
-fn get_png(bytes: &[u8]) -> Result<Png> {
-    Png::try_from(bytes).map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
+pub fn get_png_from_file(file: &mut File) -> Result<Png> {
+    let mut png_buf = Vec::new();
+
+    file.read_to_end(&mut png_buf)?;
+    Png::try_from(&png_buf[..])
+        .map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
 }
 fn open_file(path: &str, read: bool, write: bool, append: bool, create: bool) -> Result<File> {
     OpenOptions::new()
@@ -147,21 +153,17 @@ impl Command for EncodeArgs {
 
         let chunk = Chunk::new(chunk_type, chunk_data);
 
-        let mut png_buf = Vec::new();
-
         // append to file by default to avoid writing the same data to file
         let mut file = open_file(&self.file_path, true, true, true, !redirect_output)?;
 
-        let _ = file.read_to_end(&mut png_buf)?;
-
-        let mut png = get_png(&png_buf[..])?;
+        let mut png = get_png_from_file(&mut file)?;
 
         if redirect_output {
             let to_file = self.output_file.unwrap();
 
             png.append_chunk(chunk);
 
-            file = open_file(&to_file, false, true, false, false)?;
+            file = open_file(&to_file, true, true, false, true)?;
 
             file.write_all(&png.as_bytes())?;
         } else {
@@ -176,10 +178,7 @@ impl Command for DecodeArgs {
     fn execute_command(self) -> Result<()> {
         let mut file = open_file(&self.file_path, true, false, false, false)?;
 
-        let mut png_buf = Vec::new();
-
-        file.read_to_end(&mut png_buf)?;
-        let png = get_png(&png_buf[..])?;
+        let png = get_png_from_file(&mut file)?;
 
         let message = png
             .get_chunk_by_type(&self.chunk_type)
@@ -187,6 +186,18 @@ impl Command for DecodeArgs {
             .map_err(|err| Error::from(format!("Invalid message data: {}", err)))?;
 
         println!("{}", message);
+
+        Ok(())
+    }
+}
+
+impl Command for PrintArgs {
+    fn execute_command(self) -> Result<()> {
+        let mut file = open_file(&self.file_path, true, false, false, false)?;
+
+        let png = get_png_from_file(&mut file)?;
+
+        println!("{}", png);
 
         Ok(())
     }

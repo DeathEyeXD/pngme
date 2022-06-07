@@ -1,9 +1,11 @@
 use crate::common::{
     encode_command, gen_not_existing_file, TestResult, EMPTY_FILE, HEADER_ONLY_FILE,
-    INVALID_CHUNK_TYPE, MESSAGE, OUTPUT_FILE, VALID_CHUNK_TYPE, VALID_FILE,
+    INVALID_CHUNK_TYPE, INVALID_HEADER_FILE, MESSAGE, OUTPUT_FILE, VALID_CHUNK_TYPE, VALID_FILE,
 };
 use assert_cmd::assert::Assert;
+use pngme::get_png_from_file;
 use predicates::prelude::predicate;
+use std::fs::File;
 
 mod common;
 
@@ -15,6 +17,38 @@ fn encode(filename: &str, chunk_type: &str, message: &str) -> Assert {
         .arg("-o")
         .arg(OUTPUT_FILE)
         .assert()
+}
+
+fn has_last_message(message: &str) {
+    let png = get_png_from_file(
+        &mut File::options()
+            .read(true)
+            .write(false)
+            .open(OUTPUT_FILE)
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        message,
+        png.chunks().last().unwrap().data_as_string().unwrap()
+    );
+}
+
+fn encode_empty(filename: &str) {
+    encode(filename, VALID_CHUNK_TYPE, "abc").success();
+
+    has_last_message("abc")
+}
+fn encode_invalid(filename: &str) {
+    encode(filename, INVALID_CHUNK_TYPE, MESSAGE)
+        .failure()
+        .stderr(predicates::str::contains("is not a valid png byte"));
+}
+
+fn encode_valid(filename: &str) {
+    encode(filename, VALID_CHUNK_TYPE, MESSAGE).success();
+
+    has_last_message(MESSAGE)
 }
 
 #[test]
@@ -49,13 +83,33 @@ fn dies_bad_file() {
 }
 
 #[test]
-fn dies_encode_invalid_chunk() {
-    encode(EMPTY_FILE, INVALID_CHUNK_TYPE, MESSAGE)
+fn dies_encode_valid_to_empty() {
+    encode(EMPTY_FILE, VALID_CHUNK_TYPE, MESSAGE)
         .failure()
-        .stderr(predicate::str::contains("is not a valid png byte"));
+        .stderr(predicates::str::contains(
+            "Valid png must have at least 8 bytes (missing header) but only 0 were provided",
+        ));
+}
+#[test]
+fn encode_valid_to_valid() {
+    encode_valid(VALID_FILE);
 }
 
 #[test]
-fn encode_valid_to_empty() {
-    encode(EMPTY_FILE, VALID_CHUNK_TYPE, MESSAGE).success();
+fn dies_encode_invalid_to_valid() {
+    encode_invalid(VALID_FILE);
+}
+
+#[test]
+fn encode_empty_to_valid() {
+    encode_empty(VALID_FILE);
+}
+
+#[test]
+fn dies_encode_valid_to_invalid_header() {
+    encode(INVALID_HEADER_FILE, VALID_CHUNK_TYPE, MESSAGE)
+        .failure()
+        .stderr(predicates::str::contains(
+            "Valid png must contain valid signature header",
+        ));
 }

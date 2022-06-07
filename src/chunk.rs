@@ -28,13 +28,13 @@ impl Chunk {
             data,
         }
     }
-    
-    pub fn from_strings(chunk_type: &str, data: &str) -> Result<Chunk>{
+
+    pub fn from_strings(chunk_type: &str, data: &str) -> Result<Chunk> {
         let chunk_type = ChunkType::from_str(chunk_type)?;
-        
+
         let data = data.bytes().collect();
-        
-        Ok(Self::new(chunk_type,data))
+
+        Ok(Self::new(chunk_type, data))
     }
 
     pub fn calculate_crc(chunk_type: &ChunkType, data: &[u8]) -> u32 {
@@ -88,7 +88,7 @@ impl TryFrom<&[u8]> for Chunk {
     fn try_from(value: &[u8]) -> Result<Self> {
         if value.len() < 12 {
             return Err(Error::from(format!(
-                "Minimum length is 12, but {} was specified",
+                "Minimum length of chunk bytes is 12, but {} was specified",
                 value.len()
             )));
         }
@@ -131,11 +131,11 @@ impl TryFrom<&[u8]> for Chunk {
 impl fmt::Display for Chunk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Chunk {{",)?;
-        writeln!(f, "  Length: {}", self.length())?;
-        writeln!(f, "  Type: {}", self.chunk_type())?;
-        writeln!(f, "  Data: {} bytes", self.data().len())?;
-        writeln!(f, "  Crc: {}", self.crc())?;
-        writeln!(f, "}}",)?;
+        writeln!(f, "   Length: {}", self.length())?;
+        writeln!(f, "   Type: {}", self.chunk_type())?;
+        writeln!(f, "   Data: {} bytes", self.data().len())?;
+        writeln!(f, "   Crc: {}", self.crc())?;
+        writeln!(f, "   }}",)?;
         Ok(())
     }
 }

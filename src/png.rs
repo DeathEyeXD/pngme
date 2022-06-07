@@ -86,7 +86,7 @@ impl TryFrom<&[u8]> for Png {
         let bytes_len = bytes.len();
         if bytes_len < 8 {
             return Err(Error::from(format!(
-                "Valid png must have at least 8 bytes but only {} were provided",
+                "Valid png must have at least 8 bytes (missing header) but only {} were provided",
                 bytes_len
             )));
         }
@@ -120,7 +120,7 @@ impl Display for Png {
         for chunk in &self.chunks {
             writeln!(f, "        {}", chunk)?;
         }
-        writeln!(f, "}}")?;
+        write!(f, "}}")?;
         Ok(())
     }
 }
