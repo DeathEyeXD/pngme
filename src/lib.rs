@@ -1,4 +1,4 @@
-use crate::chunk::Chunk;
+pub use crate::chunk::Chunk;
 use crate::chunk_type::ChunkType;
 use crate::png::Png;
 use clap::{Args, Parser, Subcommand};
@@ -129,32 +129,28 @@ pub fn write_png_to_file(filename: &str, png: Png) -> Result<()> {
 
 pub trait Command {
     fn execute_command(self) -> Result<()>;
-
-    fn get_png(bytes: &[u8]) -> Result<Png> {
-        Png::try_from(bytes).map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
-    }
-
-    fn open_file(path: &str, read: bool, write: bool, append: bool, create: bool) -> Result<File> {
-        OpenOptions::new()
-            .read(read)
-            .write(write)
-            .append(append)
-            .create(create)
-            .open(path)
-            .map_err(|err| Error::from(format!("Cannot open file {}, cause: {}", path, err)))
-    }
 }
-
+fn get_png(bytes: &[u8]) -> Result<Png> {
+    Png::try_from(bytes).map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
+}
+fn open_file(path: &str, read: bool, write: bool, append: bool, create: bool) -> Result<File> {
+    OpenOptions::new()
+        .read(read)
+        .write(write)
+        .append(append)
+        .create(create)
+        .open(path)
+        .map_err(|err| Error::from(format!("Cannot open file {}, cause: {}", path, err)))
+}
 impl Command for EncodeArgs {
     fn execute_command(self) -> Result<()> {
         let redirect_output = self.output_file.is_some();
-
         let chunk_type = ChunkType::from_str(&self.chunk_type)?;
         let chunk_data = self.message.into_bytes();
 
         let chunk = Chunk::new(chunk_type, chunk_data);
 
-        let mut file = Self::open_file(
+        let mut file = open_file(
             &self.file_path,
             true,
             true,
@@ -170,17 +166,18 @@ impl Command for EncodeArgs {
             let mut png = if len == 0 {
                 Png::new()
             } else {
-                Self::get_png(&png_buf[..])?
+                get_png(&png_buf[..])?
             };
+
+            png.append_chunk(chunk);
 
             if redirect_output {
                 let to_file = self.output_file.unwrap();
 
-                file = Self::open_file(&to_file, false, true, false, false)?;
+                file = open_file(&to_file, false, true, false, false)?;
             }
-            file.write_all(&png.as_bytes())?;
 
-            png.append_chunk(chunk);
+            file.write_all(&png.as_bytes())?;
         } else {
             let bytes = chunk.as_bytes();
             file.write_all(&bytes)?;
@@ -192,12 +189,12 @@ impl Command for EncodeArgs {
 
 impl Command for DecodeArgs {
     fn execute_command(self) -> Result<()> {
-        let mut file = Self::open_file(&self.file_path, true, false, false, false)?;
+        let mut file = open_file(&self.file_path, true, false, false, false)?;
 
         let mut png_buf = Vec::new();
 
         file.read_to_end(&mut png_buf)?;
-        let png = Self::get_png(&png_buf[..])?;
+        let png = get_png(&png_buf[..])?;
 
         let message = png
             .get_chunk_by_type(&self.chunk_type)
