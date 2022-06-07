@@ -53,9 +53,6 @@ pub struct EncodeArgs {
     /// Outputs png file with encoded message to another file instead
     #[clap(short, long)]
     output_file: Option<String>,
-    /// Don't validate png file provided
-    #[clap(short, long, conflicts_with = "output-file")]
-    no_check: bool,
 }
 
 #[derive(Args, Debug)]
@@ -150,39 +147,27 @@ impl Command for EncodeArgs {
 
         let chunk = Chunk::new(chunk_type, chunk_data);
 
-        let mut file = open_file(
-            &self.file_path,
-            true,
-            true,
-            !self.no_check,
-            !redirect_output,
-        )?;
+        let mut png_buf = Vec::new();
 
-        if !self.no_check {
-            let mut png_buf = Vec::new();
+        // append to file by default to avoid writing the same data to file
+        let mut file = open_file(&self.file_path, true, true, true, !redirect_output)?;
 
-            let len = file.read_to_end(&mut png_buf)?;
+        let _ = file.read_to_end(&mut png_buf)?;
 
-            let mut png = if len == 0 {
-                Png::new()
-            } else {
-                get_png(&png_buf[..])?
-            };
+        let mut png = get_png(&png_buf[..])?;
+
+        if redirect_output {
+            let to_file = self.output_file.unwrap();
 
             png.append_chunk(chunk);
 
-            if redirect_output {
-                let to_file = self.output_file.unwrap();
-
-                file = open_file(&to_file, false, true, false, false)?;
-            }
+            file = open_file(&to_file, false, true, false, false)?;
 
             file.write_all(&png.as_bytes())?;
         } else {
-            let bytes = chunk.as_bytes();
-            file.write_all(&bytes)?;
+            // append just chunk data
+            file.write_all(&chunk.as_bytes())?;
         }
-
         Ok(())
     }
 }
