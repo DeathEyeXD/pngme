@@ -5,7 +5,6 @@ use crate::{Error, Result};
 
 #[derive(Debug)]
 pub struct Png {
-    header: [u8; 8],
     chunks: Vec<Chunk>,
 }
 
@@ -13,17 +12,11 @@ impl Png {
     pub const STANDARD_HEADER: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
 
     pub fn new() -> Png {
-        Png {
-            header: Self::STANDARD_HEADER,
-            chunks: Vec::new(),
-        }
+        Png { chunks: Vec::new() }
     }
 
     pub fn from_chunks(chunks: Vec<Chunk>) -> Png {
-        Png {
-            header: Self::STANDARD_HEADER,
-            chunks,
-        }
+        Png { chunks }
     }
 
     pub fn append_chunk(&mut self, chunk: Chunk) {
@@ -52,9 +45,11 @@ impl Png {
         &self.chunks
     }
 
-    pub fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
+    /// Get first matched chunk by type, searched in reverse because encoded messages are appended to the end of png
+    pub fn get_chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
         self.chunks
             .iter()
+            .rev()
             .find(|chunk| chunk.chunk_type().to_string() == chunk_type)
     }
 
@@ -71,6 +66,12 @@ impl Png {
     }
 }
 
+impl Default for Png {
+    fn default() -> Self {
+        Png::new()
+    }
+}
+
 impl TryFrom<&[u8]> for Png {
     type Error = Error;
 
@@ -78,12 +79,12 @@ impl TryFrom<&[u8]> for Png {
         let bytes_len = bytes.len();
         if bytes_len < 8 {
             return Err(Error::from(format!(
-                "Valid png must have at least 8 bytes but only {} were provided",
+                "Valid png must have at least 8 bytes (missing header) but only {} were provided",
                 bytes_len
             )));
         }
 
-        let mut header = &bytes[0..8];
+        let header = &bytes[0..8];
 
         if header != Png::STANDARD_HEADER {
             return Err(Error::from(format!(
@@ -112,42 +113,29 @@ impl Display for Png {
         for chunk in &self.chunks {
             writeln!(f, "        {}", chunk)?;
         }
-        writeln!(f, "}}")?;
+        write!(f, "}}")?;
         Ok(())
     }
 }
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-    use std::str::FromStr;
 
     use crate::chunk::Chunk;
-    use crate::chunk_type::ChunkType;
 
     use super::*;
 
     fn testing_chunks() -> Vec<Chunk> {
-        let mut chunks = Vec::new();
-
-        chunks.push(chunk_from_strings("FrSt", "I am the first chunk").unwrap());
-        chunks.push(chunk_from_strings("miDl", "I am another chunk").unwrap());
-        chunks.push(chunk_from_strings("LASt", "I am the last chunk").unwrap());
-
-        chunks
+        vec![
+            Chunk::from_strings("FrSt", "I am the first chunk").unwrap(),
+            Chunk::from_strings("miDl", "I am another chunk").unwrap(),
+            Chunk::from_strings("LASt", "I am the last chunk").unwrap(),
+        ]
     }
 
     fn testing_png() -> Png {
         let chunks = testing_chunks();
         Png::from_chunks(chunks)
-    }
-
-    fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk> {
-        use std::str::FromStr;
-
-        let chunk_type = ChunkType::from_str(chunk_type)?;
-        let data: Vec<u8> = data.bytes().collect();
-
-        Ok(Chunk::new(chunk_type, data))
     }
 
     #[test]
@@ -226,7 +214,7 @@ mod tests {
     #[test]
     fn test_chunk_by_type() {
         let png = testing_png();
-        let chunk = png.chunk_by_type("FrSt").unwrap();
+        let chunk = png.get_chunk_by_type("FrSt").unwrap();
         assert_eq!(&chunk.chunk_type().to_string(), "FrSt");
         assert_eq!(&chunk.data_as_string().unwrap(), "I am the first chunk");
     }
@@ -234,8 +222,8 @@ mod tests {
     #[test]
     fn test_append_chunk() {
         let mut png = testing_png();
-        png.append_chunk(chunk_from_strings("TeSt", "Message").unwrap());
-        let chunk = png.chunk_by_type("TeSt").unwrap();
+        png.append_chunk(Chunk::from_strings("TeSt", "Message").unwrap());
+        let chunk = png.get_chunk_by_type("TeSt").unwrap();
         assert_eq!(&chunk.chunk_type().to_string(), "TeSt");
         assert_eq!(&chunk.data_as_string().unwrap(), "Message");
     }
@@ -243,9 +231,9 @@ mod tests {
     #[test]
     fn test_remove_chunk() {
         let mut png = testing_png();
-        png.append_chunk(chunk_from_strings("TeSt", "Message").unwrap());
+        png.append_chunk(Chunk::from_strings("TeSt", "Message").unwrap());
         png.remove_chunk("TeSt").unwrap();
-        let chunk = png.chunk_by_type("TeSt");
+        let chunk = png.get_chunk_by_type("TeSt");
         assert!(chunk.is_none());
     }
 
@@ -259,7 +247,7 @@ mod tests {
     fn test_as_bytes() {
         let png = Png::try_from(&PNG_FILE[..]).unwrap();
         let actual = png.as_bytes();
-        let expected: Vec<u8> = PNG_FILE.iter().copied().collect();
+        let expected: Vec<u8> = PNG_FILE.to_vec();
         assert_eq!(actual, expected);
     }
 

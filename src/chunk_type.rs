@@ -1,8 +1,7 @@
+use crate::Error;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
-
-use crate::Error;
 
 #[derive(PartialEq, Debug)]
 pub struct ChunkType {
@@ -15,7 +14,7 @@ impl ChunkType {
     }
 
     pub fn is_valid(&self) -> bool {
-        // bits are checked on creation, so only chgeck if reserved bit is valid
+        // bits are checked on creation, so only check if reserved bit is valid
         self.is_reserved_bit_valid()
     }
     pub fn is_critical(&self) -> bool {
@@ -45,7 +44,10 @@ impl ChunkType {
     }
 
     fn error_byte(byte: u8) -> Error {
-        return Error::from(format!("{} is not a valid png byte", byte));
+        return Error::from(format!(
+            "{} is not a valid png byte (it must be a letter)",
+            byte
+        ));
     }
 }
 impl TryFrom<[u8; 4]> for ChunkType {
