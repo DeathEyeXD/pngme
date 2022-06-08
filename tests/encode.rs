@@ -3,9 +3,8 @@ use crate::common::{
     INVALID_CHUNK_TYPE, INVALID_HEADER_FILE, MESSAGE, OUTPUT_FILE, VALID_CHUNK_TYPE, VALID_FILE,
 };
 use assert_cmd::assert::Assert;
-use pngme::get_png_from_file;
+use pngme::get_png;
 use predicates::prelude::predicate;
-use std::fs::File;
 
 mod common;
 
@@ -20,14 +19,7 @@ fn encode(filename: &str, chunk_type: &str, message: &str) -> Assert {
 }
 
 fn has_last_message(message: &str) {
-    let png = get_png_from_file(
-        &mut File::options()
-            .read(true)
-            .write(false)
-            .open(OUTPUT_FILE)
-            .unwrap(),
-    )
-    .unwrap();
+    let png = get_png(OUTPUT_FILE).unwrap();
     assert_eq!(
         message,
         png.chunks().last().unwrap().data_as_string().unwrap()
