@@ -66,10 +66,7 @@ pub struct DecodeArgs {
 pub struct RemoveArgs {
     file_path: String,
     chunk_type: String,
-    /// Remove all matched messages instead of first matching
-    #[clap(short, long)]
-    all: bool,
-    /// Dont encode and output removed messages
+    /// Dont decode and output removed messages
     #[clap(short, long)]
     ignore_messages: bool,
 }
@@ -131,20 +128,11 @@ pub trait Command {
 }
 
 pub fn get_png(filename: &str) -> Result<Png> {
-    let mut file = open_file(filename, true, false)?;
+    let png_buf = fs::read(filename)
+        .map_err(|err| Error::from(format!("Cannot open file {}, cause: {}", filename, err)))?;
 
-    let mut png_buf = Vec::with_capacity(1_000_000);
-
-    file.read_to_end(&mut png_buf)?;
     Png::try_from(&png_buf[..])
         .map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
-}
-fn open_file(path: &str, write: bool, create: bool) -> Result<File> {
-    OpenOptions::new()
-        .write(write)
-        .create(create)
-        .open(path)
-        .map_err(|err| Error::from(format!("Cannot open file {}, cause: {}", path, err)))
 }
 
 impl Command for EncodeArgs {
@@ -188,6 +176,23 @@ impl Command for PrintArgs {
 
         println!("{}", png);
 
+        Ok(())
+    }
+}
+
+impl Command for RemoveArgs {
+    fn execute_command(self) -> Result<()> {
+        let mut png = get_png(&self.file_path)?;
+
+        let deleted_chunk = png.remove_chunk(&self.chunk_type);
+
+        if let Ok(chunk) = deleted_chunk {
+            if !self.ignore_messages {
+                println!("deleted chunk with message '{}'", chunk.data_as_string()?);
+            }
+        } else {
+            println!("No chunk with type '{}' was found", self.chunk_type);
+        }
         Ok(())
     }
 }

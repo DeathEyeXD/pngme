@@ -5,7 +5,6 @@ use crate::{Error, Result};
 
 #[derive(Debug)]
 pub struct Png {
-    header: [u8; 8],
     chunks: Vec<Chunk>,
 }
 
@@ -13,17 +12,11 @@ impl Png {
     pub const STANDARD_HEADER: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
 
     pub fn new() -> Png {
-        Png {
-            header: Self::STANDARD_HEADER,
-            chunks: Vec::new(),
-        }
+        Png { chunks: Vec::new() }
     }
 
     pub fn from_chunks(chunks: Vec<Chunk>) -> Png {
-        Png {
-            header: Self::STANDARD_HEADER,
-            chunks,
-        }
+        Png { chunks }
     }
 
     pub fn append_chunk(&mut self, chunk: Chunk) {
