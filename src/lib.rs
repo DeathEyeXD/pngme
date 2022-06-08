@@ -129,63 +129,54 @@ pub fn write_png_to_file(filename: &str, png: Png) -> Result<()> {
 pub trait Command {
     fn execute_command(self) -> Result<()>;
 }
-pub fn get_png_from_file(file: &mut File) -> Result<Png> {
-    let mut png_buf = Vec::new();
+
+pub fn get_png(filename: &str) -> Result<Png> {
+    let mut file = open_file(filename, true, false)?;
+
+    let mut png_buf = Vec::with_capacity(1_000_000);
 
     file.read_to_end(&mut png_buf)?;
     Png::try_from(&png_buf[..])
         .map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
 }
-fn open_file(path: &str, read: bool, write: bool, append: bool, create: bool) -> Result<File> {
+fn open_file(path: &str, write: bool, create: bool) -> Result<File> {
     OpenOptions::new()
-        .read(read)
         .write(write)
-        .append(append)
         .create(create)
         .open(path)
         .map_err(|err| Error::from(format!("Cannot open file {}, cause: {}", path, err)))
 }
+
 impl Command for EncodeArgs {
     fn execute_command(self) -> Result<()> {
-        let redirect_output = self.output_file.is_some();
-        let chunk_type = ChunkType::from_str(&self.chunk_type)?;
-        let chunk_data = self.message.into_bytes();
+        let mut png = get_png(&self.file_path)?;
 
-        let chunk = Chunk::new(chunk_type, chunk_data);
+        png.append_chunk(Chunk::new(
+            ChunkType::from_str(&self.chunk_type)?,
+            self.message.into_bytes(),
+        ));
 
-        // append to file by default to avoid writing the same data to file
-        let mut file = open_file(&self.file_path, true, true, true, !redirect_output)?;
-
-        let mut png = get_png_from_file(&mut file)?;
-
-        if redirect_output {
-            let to_file = self.output_file.unwrap();
-
-            png.append_chunk(chunk);
-
-            file = open_file(&to_file, true, true, false, true)?;
-
-            file.write_all(&png.as_bytes())?;
-        } else {
-            // append just chunk data
-            file.write_all(&chunk.as_bytes())?;
-        }
+        let output = &self.output_file.unwrap_or(self.file_path);
+        fs::write(output, &png.as_bytes())?;
         Ok(())
     }
 }
 
 impl Command for DecodeArgs {
     fn execute_command(self) -> Result<()> {
-        let mut file = open_file(&self.file_path, true, false, false, false)?;
+        let png = get_png(&self.file_path)?;
 
-        let png = get_png_from_file(&mut file)?;
+        let chunk = png.get_chunk_by_type(&self.chunk_type);
 
-        let message = png
-            .get_chunk_by_type(&self.chunk_type)
-            .map_or(Ok(String::from("")), |chunk| chunk.data_as_string())
-            .map_err(|err| Error::from(format!("Invalid message data: {}", err)))?;
+        if let Some(chunk) = chunk {
+            let message = chunk
+                .data_as_string()
+                .map_err(|err| Error::from(format!("Invalid message data: {}", err)))?;
 
-        println!("{}", message);
+            println!("secret message: '{}'", message);
+        } else {
+            println!("No chunk with type '{}' was found", self.chunk_type);
+        }
 
         Ok(())
     }
@@ -193,9 +184,7 @@ impl Command for DecodeArgs {
 
 impl Command for PrintArgs {
     fn execute_command(self) -> Result<()> {
-        let mut file = open_file(&self.file_path, true, false, false, false)?;
-
-        let png = get_png_from_file(&mut file)?;
+        let png = get_png(&self.file_path)?;
 
         println!("{}", png);
 
