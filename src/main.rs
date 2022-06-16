@@ -1,12 +1,5 @@
-mod args;
-mod chunk;
-mod chunk_type;
-mod commands;
-mod png;
+use pngme::{get_args, run};
 
-pub type Error = Box<dyn std::error::Error>;
-pub type Result<T> = std::result::Result<T, Error>;
-
-fn main() -> Result<()> {
-    Ok(())
+fn main() -> pngme::Result<()> {
+    run(get_args())
 }

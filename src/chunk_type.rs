@@ -4,7 +4,7 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 
 #[derive(PartialEq, Debug)]
-pub(crate) struct ChunkType {
+pub struct ChunkType {
     values: [u8; 4],
 }
 
@@ -14,7 +14,7 @@ impl ChunkType {
     }
 
     pub fn is_valid(&self) -> bool {
-        // bits are checked on creation, so only chgeck if reserved bit is valid
+        // bits are checked on creation, so only check if reserved bit is valid
         self.is_reserved_bit_valid()
     }
     pub fn is_critical(&self) -> bool {
@@ -44,7 +44,10 @@ impl ChunkType {
     }
 
     fn error_byte(byte: u8) -> Error {
-        return Error::from(format!("{} is not a valid png byte", byte));
+        return Error::from(format!(
+            "{} is not a valid png byte (it must be a letter)",
+            byte
+        ));
     }
 }
 impl TryFrom<[u8; 4]> for ChunkType {
@@ -64,7 +67,7 @@ impl FromStr for ChunkType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.as_bytes();
         let len = s.len();
-        if len > 4 {
+        if len < 4 {
             return Err(Error::from(format!(
                 "Required 4 byte string got {} bytes",
                 len
@@ -82,9 +85,10 @@ impl fmt::Display for ChunkType {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use super::*;
 
     #[test]
     pub fn test_chunk_type_from_bytes() {
