@@ -3,8 +3,8 @@ use crate::chunk_type::ChunkType;
 use crate::png::Png;
 use clap::{Args, Parser, Subcommand};
 use std::fs;
-use std::fs::{File, OpenOptions};
-use std::io::{Read, Write};
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::str::FromStr;
 
 mod chunk;
@@ -185,7 +185,10 @@ fn remove_chunk(args: RemoveArgs) -> Result<()> {
         }
         Ok(())
     } else {
-        Err(Error::from(format!("No chunk with type '{}' was found", args.chunk_type)))
+        Err(Error::from(format!(
+            "No chunk with type '{}' was found",
+            args.chunk_type
+        )))
     }
 }
 

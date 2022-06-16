@@ -1,9 +1,38 @@
 # pngme
 
 Encode and decode secret messages in png files.
-This project is my impementation of this [guide](https://picklenerd.github.io/pngme_book/).
+This project is my implementation of this [guide](https://picklenerd.github.io/pngme_book/).
 
-usage:
+## Compiling / running
+
+compile:
+
+```
+cargo build
+```
+
+run:
+
+```
+cargo run <SUBCOMMAND>
+```
+
+## Installing
+
+locally:
+
+```
+cargo install --path .
+```
+
+remotely:
+
+```
+cargo install --git https://github.com/DeathEyeXD/pngme
+```
+
+## Usage:
+
 ```
 USAGE:
     pngme.exe <SUBCOMMAND>
