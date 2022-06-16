@@ -78,10 +78,10 @@ pub struct PrintArgs {
 
 pub fn execute_command(command: CommandType) -> Result<()> {
     match command {
-        CommandType::Encode(args) => args.execute_command(),
-        CommandType::Decode(args) => args.execute_command(),
-        CommandType::Print(args) => args.execute_command(),
-        _ => Ok(()),
+        CommandType::Encode(args) => encode(args),
+        CommandType::Decode(args) => decode(args),
+        CommandType::Print(args) => print_png(args),
+        CommandType::Remove(args) => remove_chunk(args),
     }
 }
 
@@ -135,65 +135,57 @@ pub fn get_png(filename: &str) -> Result<Png> {
         .map_err(|err| Error::from(format!("Invalid png file data ({})", err)))
 }
 
-impl Command for EncodeArgs {
-    fn execute_command(self) -> Result<()> {
-        let mut png = get_png(&self.file_path)?;
+fn encode(args: EncodeArgs) -> Result<()> {
+    let mut png = get_png(&args.file_path)?;
 
-        png.append_chunk(Chunk::new(
-            ChunkType::from_str(&self.chunk_type)?,
-            self.message.into_bytes(),
-        ));
+    png.append_chunk(Chunk::new(
+        ChunkType::from_str(&args.chunk_type)?,
+        args.message.into_bytes(),
+    ));
 
-        let output = &self.output_file.unwrap_or(self.file_path);
-        fs::write(output, &png.as_bytes())?;
-        Ok(())
-    }
+    let output = &args.output_file.unwrap_or(args.file_path);
+    fs::write(output, &png.as_bytes())?;
+    Ok(())
 }
 
-impl Command for DecodeArgs {
-    fn execute_command(self) -> Result<()> {
-        let png = get_png(&self.file_path)?;
+fn decode(args: DecodeArgs) -> Result<()> {
+    let png = get_png(&args.file_path)?;
 
-        let chunk = png.get_chunk_by_type(&self.chunk_type);
+    let chunk = png.get_chunk_by_type(&args.chunk_type);
 
-        if let Some(chunk) = chunk {
-            let message = chunk
-                .data_as_string()
-                .map_err(|err| Error::from(format!("Invalid message data: {}", err)))?;
+    if let Some(chunk) = chunk {
+        let message = chunk
+            .data_as_string()
+            .map_err(|err| Error::from(format!("Invalid message data: {}", err)))?;
 
-            println!("secret message: '{}'", message);
-        } else {
-            println!("No chunk with type '{}' was found", self.chunk_type);
-        }
-
-        Ok(())
+        println!("secret message: '{}'", message);
+    } else {
+        println!("No chunk with type '{}' was found", args.chunk_type);
     }
+
+    Ok(())
 }
 
-impl Command for PrintArgs {
-    fn execute_command(self) -> Result<()> {
-        let png = get_png(&self.file_path)?;
+fn print_png(args: PrintArgs) -> Result<()> {
+    let png = get_png(&args.file_path)?;
 
-        println!("{}", png);
+    println!("{}", png);
 
-        Ok(())
-    }
+    Ok(())
 }
 
-impl Command for RemoveArgs {
-    fn execute_command(self) -> Result<()> {
-        let mut png = get_png(&self.file_path)?;
+fn remove_chunk(args: RemoveArgs) -> Result<()> {
+    let mut png = get_png(&args.file_path)?;
 
-        let deleted_chunk = png.remove_chunk(&self.chunk_type);
+    let deleted_chunk = png.remove_chunk(&args.chunk_type);
 
-        if let Ok(chunk) = deleted_chunk {
-            if !self.ignore_messages {
-                println!("deleted chunk with message '{}'", chunk.data_as_string()?);
-            }
-        } else {
-            println!("No chunk with type '{}' was found", self.chunk_type);
+    if let Ok(chunk) = deleted_chunk {
+        if !args.ignore_messages {
+            println!("deleted chunk with message '{}'", chunk.data_as_string()?);
         }
         Ok(())
+    } else {
+        Err(Error::from(format!("No chunk with type '{}' was found", args.chunk_type)))
     }
 }
 

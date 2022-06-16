@@ -23,7 +23,7 @@ pub const VALID_FILE: &str = "tests/inputs/valid.png";
 
 pub const VALID_ENCODED1: &str = "tests/inputs/valid_encoded1.png";
 pub const VALID_ENCODED2: &str = "tests/inputs/valid_encoded2.png";
-pub const VALID_ENCODED2_DIFFERNT: &str = "tests/inputs/valid_encoded2_different.png";
+pub const VALID_ENCODED2_DIFFERENT: &str = "tests/inputs/valid_encoded2_different.png";
 
 pub const OUTPUT_FILE: &str = "tests/test.png";
 
@@ -68,5 +68,12 @@ pub fn decode_command() -> Command {
     let mut command = command();
     command.arg("decode");
 
+    command
+}
+pub fn remove_command() -> Command{
+    let mut command = command();
+    
+    command.arg("remove");
+    
     command
 }

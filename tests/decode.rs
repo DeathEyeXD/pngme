@@ -1,7 +1,7 @@
 use crate::common::{
     decode_command, DIFFERENT_MESSAGE, EMPTY_FILE, INVALID_HEADER_FILE, MESSAGE, SECOND_MESSAGE,
     VALID_CHUNK_TYPE, VALID_DIFFERENT_CHUNK_TYPE, VALID_ENCODED1, VALID_ENCODED2,
-    VALID_ENCODED2_DIFFERNT, VALID_FILE,
+    VALID_ENCODED2_DIFFERENT, VALID_FILE,
 };
 use assert_cmd::assert::Assert;
 
@@ -43,7 +43,7 @@ fn decode_valid2_last() {
 #[test]
 fn decode_valid2_different_last() {
     decode_message(
-        VALID_ENCODED2_DIFFERNT,
+        VALID_ENCODED2_DIFFERENT,
         VALID_DIFFERENT_CHUNK_TYPE,
         DIFFERENT_MESSAGE,
     );
