@@ -1,10 +1,12 @@
+use assert_cmd::assert::Assert;
+use predicates::prelude::predicate;
+
+use pngme::get_png;
+
 use crate::common::{
-    encode_command, gen_not_existing_file, TestResult, EMPTY_FILE, HEADER_ONLY_FILE,
+    encode_command, gen_not_existing_file, EMPTY_FILE,
     INVALID_CHUNK_TYPE, INVALID_HEADER_FILE, MESSAGE, OUTPUT_FILE, VALID_CHUNK_TYPE, VALID_FILE,
 };
-use assert_cmd::assert::Assert;
-use pngme::get_png;
-use predicates::prelude::predicate;
 
 mod common;
 

@@ -1,6 +1,6 @@
+use predicates::prelude::*;
 
 use crate::common::command;
-use predicates::prelude::*;
 
 mod common;
 

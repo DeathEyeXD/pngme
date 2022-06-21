@@ -1,7 +1,8 @@
+use std::{fs};
+
 use assert_cmd::Command;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use std::{fs, io};
 
 pub type TestResult = pngme::Result<()>;
 
@@ -70,10 +71,10 @@ pub fn decode_command() -> Command {
 
     command
 }
-pub fn remove_command() -> Command{
+pub fn remove_command() -> Command {
     let mut command = command();
-    
+
     command.arg("remove");
-    
+
     command
 }

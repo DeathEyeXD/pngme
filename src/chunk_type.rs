@@ -1,7 +1,8 @@
-use crate::Error;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+
+use crate::Error;
 
 #[derive(PartialEq, Debug)]
 pub struct ChunkType {

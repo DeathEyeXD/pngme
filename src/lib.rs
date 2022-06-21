@@ -1,11 +1,13 @@
-pub use crate::chunk::Chunk;
-use crate::chunk_type::ChunkType;
-use crate::png::Png;
-use clap::{Args, Parser, Subcommand};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::str::FromStr;
+
+use clap::{Args, Parser, Subcommand};
+
+pub use crate::chunk::Chunk;
+use crate::chunk_type::ChunkType;
+use crate::png::Png;
 
 mod chunk;
 mod chunk_type;
@@ -175,11 +177,13 @@ fn print_png(args: PrintArgs) -> Result<()> {
 }
 
 fn remove_chunk(args: RemoveArgs) -> Result<()> {
-    let mut png = get_png(&args.file_path)?;
+    let filename = &args.file_path;
+    let mut png = get_png(filename)?;
 
     let deleted_chunk = png.remove_chunk(&args.chunk_type);
 
     if let Ok(chunk) = deleted_chunk {
+        // fs::write(filename, &png.as_bytes())?;
         if !args.ignore_messages {
             println!("deleted chunk with message '{}'", chunk.data_as_string()?);
         }
